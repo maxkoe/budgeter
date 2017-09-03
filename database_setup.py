@@ -2,7 +2,7 @@ import sqlite3 as sql
 import pandas as pd
 import sys
 
-db_filename = sys.argv[0] if len(sys.argv) > 0 else 'my-budget-default.sqlite'
+db_filename = sys.argv[1] if len(sys.argv) > 1 else 'my-budget-default.sqlite'
 
 db = sql.connect(db_filename)
 print('Creating an an empty database as "{}"'.format(db_filename))
@@ -108,9 +108,7 @@ crsr.execute('''CREATE TABLE IF NOT EXISTS payments (
         id INTEGER,
         money_pot TEXT,
         amount REAL,
-        additional_description TEXT,
-        budget_effect_date TEXT, 
-        creation_date TEXT NOT NULL,
+        additional_description TEXT, 
         modification_dates BLOB,
         comments TEXT,
         complete TEXT,
@@ -125,7 +123,7 @@ crsr.execute('''
         budget_pot TEXT NOT NULL,
         amount REAL NOT NULL,
         additional_description TEXT,
-        creation_date TEXT NOT NULL,
+        budget_effect_date TEXT,
         modification_dates BLOB,
         comments TEXT,
         complete TEXT,
@@ -144,6 +142,7 @@ display(pd.read_sql_query("SELECT name FROM sqlite_master WHERE type='table';", 
 crsr = db.cursor()
 crsr.execute("SELECT name FROM sqlite_master WHERE type='table';")
 for table in crsr.fetchall() :
+    print('The table {}: '.format(table[0]))
     display(pd.read_sql_query('SELECT * FROM {};'.format(table[0]), db))
 
 db.close()
