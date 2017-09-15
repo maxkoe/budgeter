@@ -1,3 +1,7 @@
+### ToDo
+# Set more things NOT NULL
+
+
 import sqlite3 as sql
 import pandas as pd
 import sys
@@ -38,8 +42,11 @@ crsr.execute('''
 
 # create table list of all actions that can be undertaken with funds
 
+crsr = db.cursor()
+
 crsr.execute('''
     CREATE TABLE IF NOT EXISTS event_types (
+        category TEXT,
         type TEXT PRIMARY KEY,
         description TEXT,
         abbreviation TEXT UNIQUE
@@ -48,19 +55,20 @@ crsr.execute('''
 
 crsr.execute('''
     INSERT INTO event_types
-    VALUES ('Festsetzung', 'Festsetzen des zu einem Zeitpunkt vorhanden Betrag in einem Geldtopf', 'Fe'),
-           ('Kontrolle', 'positive Überprüfung des theoretischen Geldbetrag in einem Geldtopf', 'Ko'),
-           ('Differenz', 'Korrektur des theoretischen Geldbetrag in einem Geldtopf auf den realen Wert', 'Di'),
-           ('Transfer', 'Übertragung von Geld zwischen zwei Geldtöpfen', 'T'),
-           ('Barzahlung', 'bares Bezahlen', 'B'),
-           ('Kartenzahlung', 'Zahlen mit Visa oder Girokarte', 'K'),
-           ('Bankeinzug', 'Rechnungsbegleichung durch direkten Bankeinzug', 'BE'),
-           ('Überweisung', 'Rechnungsbegleichung durch Überweisen', 'U'),
-           ('SEPA-Mandat', 'automatische (regelmäßige) Rechnungsbegleichung durch direkten Bankeinzug', 'S'),
-           ('Dauerauftrag', 'automatische (regelmäßige) Rechnungsbegleichung durch Dauerauftrag', 'D'),
-           ('Einnahme', 'reguläre Geldeinnahme', 'E'),
-           ('Geldfund', 'unerwartete Geldeinnahme, z.B. Geldfund', 'GF');
+    VALUES ('Zahlung', 'Barzahlung', 'bares Bezahlen', 'B'),
+           ('Zahlung', 'Kartenzahlung', 'Zahlen mit Visa oder Girokarte', 'K'),
+           ('Zahlung', 'Überweisung', 'Rechnungsbegleichung durch Überweisen', 'U'),
+           ('Zahlung', 'Dauerauftrag', 'automatische (regelmäßige) Rechnungsbegleichung durch Dauerauftrag', 'D'),
+           ('Zahlung', 'SEPA-Mandat', 'automatische (regelmäßige) Rechnungsbegleichung durch direkten Bankeinzug', 'S'),
+           ('Zahlung', 'Bankeinzug', 'Rechnungsbegleichung durch direkten Bankeinzug', 'BE'),
+           ('Transfer', 'Abheben', 'Geldabheben', 'A'),
+           ('Transfer', 'Kontotransfer', 'Transger von Geld zwischen zwei Konten', 'KT'),
+           ('Transfer', 'Bargeldtransfer', 'Transfer von Bargeld zwischen zwei baren Geldtöpfen', 'BT'),
+           ('Recieving', 'Einnahme', 'reguläre Geldeinnahme', 'E'),
+           ('Recieving', 'Geldfund', 'unerwartete Geldeinnahme, z.B. Geldfund', 'GF');
 ''')
+
+db.commit()
 
 # create table list of all actions that can be undertaken with funds
 
@@ -91,31 +99,68 @@ crsr.execute('''
            ('T', 'Transportkosten','M');
 ''')
 
+crsr = db.cursor()
+
 crsr.execute('''
     CREATE TABLE IF NOT EXISTS money_events (
         id INTEGER PRIMARY KEY,
         type TEXT,
         description TEXT NOT NULL,
-        creation_date TEXT NOT NULL,
-        modification_dates BLOB,
-        comments TEXT,
-        complete TEXT,
+        date TEXT NOT NULL,
         FOREIGN KEY (type) REFERENCES event_types (type)
     );
 ''')
+
+db.commit()
+
+crsr = db.cursor()
 
 crsr.execute('''CREATE TABLE IF NOT EXISTS payments (
         id INTEGER,
         money_pot TEXT,
         amount REAL,
-        additional_description TEXT, 
-        modification_dates BLOB,
-        comments TEXT,
-        complete TEXT,
+        additional_description TEXT,
+        effect_date TEXT, 
         FOREIGN KEY (id) REFERENCES money_events(id),
         FOREIGN KEY (money_pot) REFERENCES money_pots (key)
     );
 ''')
+
+db.commit()
+
+crsr = db.cursor()
+
+crsr.execute('''CREATE TABLE IF NOT EXISTS recievings (
+        id INTEGER,
+        money_pot TEXT,
+        amount REAL,
+        additional_description TEXT,
+        budget_effect_date TEXT, 
+        FOREIGN KEY (id) REFERENCES money_events(id),
+        FOREIGN KEY (money_pot) REFERENCES money_pots (key)
+    );
+''')
+
+db.commit()
+
+crsr = db.cursor()
+
+crsr.execute('''CREATE TABLE IF NOT EXISTS transfers (
+        id INTEGER,
+        money_pot_source TEXT,
+        money_pot_sink TEXT,
+        amount REAL,
+        additional_description TEXT,
+        effect_date TEXT, 
+        FOREIGN KEY (id) REFERENCES money_events(id),
+        FOREIGN KEY (money_pot_source) REFERENCES money_pots (key),
+        FOREIGN KEY (money_pot_sink) REFERENCES money_pots (key)
+    );
+''')
+
+db.commit()
+
+crsr = db.cursor()
 
 crsr.execute('''
     CREATE TABLE IF NOT EXISTS budget_events (
@@ -123,14 +168,61 @@ crsr.execute('''
         budget_pot TEXT NOT NULL,
         amount REAL NOT NULL,
         additional_description TEXT,
-        budget_effect_date TEXT,
-        modification_dates BLOB,
-        comments TEXT,
-        complete TEXT,
-        FOREIGN KEY (id) REFERENCES money_events (id)
+        budget_effet_date TEXT,
+        FOREIGN KEY (id) REFERENCES money_events (id),
         FOREIGN KEY (budget_pot) REFERENCES budget_pots (key)
     );
 ''')
+
+db.commit()
+
+crsr = db.cursor()
+
+crsr.execute('''
+    CREATE TABLE IF NOT EXISTS event_groups (
+        group_id INTEGER PRIMARY KEY,
+        description TEXT NOT NULL
+    );
+''')
+
+crsr.execute('''
+    CREATE TABLE IF NOT EXISTS event_in_group (
+        group_id INTEGER,
+        event_id TEXT UNIQUE,
+        FOREIGN KEY (group_id) REFERENCES event_groups (group_id),
+        FOREIGN KEY (event_id) REFERENCES money_events (id)
+    );
+''')
+
+crsr = db.cursor()
+
+crsr.execute('''
+    CREATE TABLE IF NOT EXISTS database_event_types (
+        type TEXT PRIMARY KEY,
+        description TEXT
+    );
+''')
+
+crsr.execute('''
+    INSERT INTO database_event_types
+    VALUES ('Erstellung', 'Erstellung eines Eintrages'),
+           ('Update', 'Hinzufügen von Information'),
+           ('Korrektur', 'Korrigieren eines Eintrages'),
+           ('Löschung', 'Löschen eines Eintrages');
+''')
+
+crsr.execute('''
+    CREATE TABLE IF NOT EXISTS database_events (
+        id INTEGER,
+        type TEXT,
+        date TEXT,
+        description TEXT,
+        FOREIGN KEY (id) REFERENCES money_events (id),
+        FOREIGN KEY (type) REFERENCES database_event_types (type)
+    );
+''')
+
+db.commit()
 
 db.commit()
 
