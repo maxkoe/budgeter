@@ -62,6 +62,7 @@ crsr.execute('''
            ('Zahlung', 'SEPA-Mandat', 'automatische (regelmäßige) Rechnungsbegleichung durch direkten Bankeinzug', 'S'),
            ('Zahlung', 'Bankeinzug', 'Rechnungsbegleichung durch direkten Bankeinzug', 'BE'),
            ('Transfer', 'Abheben', 'Geldabheben', 'A'),
+           ('Transfer', 'Aufladen', 'Aufladen auf eine Chipkarte', 'AU'),
            ('Transfer', 'Kontotransfer', 'Transger von Geld zwischen zwei Konten', 'KT'),
            ('Transfer', 'Bargeldtransfer', 'Transfer von Bargeld zwischen zwei baren Geldtöpfen', 'BT'),
            ('Recieving', 'Einnahme', 'reguläre Geldeinnahme', 'E'),
@@ -221,8 +222,6 @@ crsr.execute('''
         FOREIGN KEY (type) REFERENCES database_event_types (type)
     );
 ''')
-
-db.commit()
 
 db.commit()
 
