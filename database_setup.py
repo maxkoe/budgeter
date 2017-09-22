@@ -195,6 +195,28 @@ crsr.execute('''
     );
 ''')
 
+db.commit()
+
+
+crsr.execute('''
+    INSERT INTO event_groups
+    VALUES (1, 'Miete'),
+           (2, 'Haftpflichtversicherung'),
+           (3, 'Berufsunfähigkeitsversicherung'),
+           (4, 'Strom'),
+           (5, 'Vodafone'),
+           (6, 'Drillisch Paul'),
+           (7, 'Drillisch Max'),
+           (8, 'Apple Music Paul'),
+           (9, 'Spotify Max'),
+           (10, 'Backblaze'),
+           (11, 'Semestergebühr Paul'),
+           (12, 'Semestergebühr Max'),
+           (13, 'Sportjahresgebühr'),
+           (14, 'Sport'),
+           (15, 'GEW'),
+           (16, 'GEZ');
+''')
 crsr = db.cursor()
 
 crsr.execute('''
