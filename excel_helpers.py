@@ -99,12 +99,7 @@ def put_comment_into_excel(sheet, cells, comment_text) :
     comment = pyxl.comments.Comment(comment_text, 'budgeter')
     if type(cells) is list :
         for cell in cells :
-            try : 
-                sheet[cell].comment = comment
-            except :
-                print(cell)
-                print(comment)
-                print(type(sheet))
+            sheet[cell].comment = comment
     elif type(cells) is str :
         sheet[cells].comment = comment
     else :
