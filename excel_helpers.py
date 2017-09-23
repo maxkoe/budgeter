@@ -108,7 +108,7 @@ def put_comment_into_excel(sheet, cells, comment_text) :
 
 def use_excel_for_data_entry(workbook_path, copy_mode=True,
                              temp_path='./temp_workbook.xlsx',
-                             delete_temp=True) :
+                             delete_temp=True, open_before_read=True) :
     """Open an Excel workbook for data entry. Afterwards parse it with pandas
     and prompt the result. Reopen the document, if the read data is not 
     satisfactory.
@@ -132,16 +132,16 @@ def use_excel_for_data_entry(workbook_path, copy_mode=True,
 
     while not data_is_final :
         # Opening the file 
-        signal = input('The file ' + workbook_path + ' will be opened in Excel'
-                       ' for data entry. Enter Q to abort, enter anything else'
-                       ' to continue. ')
-        abort_with_q(signal)
+        if open_before_read :
+            signal = input('The file ' + workbook_path + ' will be opened in'
+                           ' Excel for data entry. Enter Q to abort, enter'
+                           ' anything else to continue. ')
+            abort_with_q(signal)
 
-        os.system('open ' + workbook_path)
-        input('Make any input to continue.')
+            os.system('open ' + workbook_path)
+            input('Make any input to continue.')
 
         # Reading the data
-
         read_data = pd.read_excel(workbook_path, skiprows=1)
         
         ## ToDo : Here one could do a replace with a dict if the transaction 
@@ -151,9 +151,9 @@ def use_excel_for_data_entry(workbook_path, copy_mode=True,
         display(read_data)
         print('')
 
-        signal = input('If this is not the intended data, enter any number. '
-                       'If you do this, the workbook will be opened again. '
-                       'You can abort by entering Q.')
+        signal = input('If you are satisfied with the read data, enter any'
+                       ' number. If you do not do this, the workbook will be'
+                       ' opened again. You can abort by entering Q.')
         abort_with_q(signal)
 
         def is_number(s) :
@@ -166,69 +166,11 @@ def use_excel_for_data_entry(workbook_path, copy_mode=True,
         if not is_number(request) :
             print('OK.')
             data_is_final = True
+        else
+            # This really makes sure the file will be opened again
+            open_before_read = True
+
+    if delete_temp :
+        os.remove(temp_path)
     
     return read_data
-
-###
-###def open_excel_file(workbook_path) :
-###    """Open an Excel file via shell commands. Before opening the file you get 
-###    a confirmation prompt.
-###
-###    Keyword arguments:
-###        workbook_path -- path of the Excel workbook to be opened.
-###    """
-###    signal = input('The file ' + workbook_path + ' will be opened in Excel for'
-###                   ' data entry. Enter Q to abort, enter anything else to'
-###                   ' continue. ')
-###    
-###    if signal in ['Q', 'q'] :
-###        print('Aborted.')
-###        return 0
-###
-###    os.system('open ' + workbook_path)
-###    input('Make any input to continue.')
-###    
-###    return 1
-###
-###def parse_excel_to_pandas(workbook_path, copy_mode = True) :
-###    """Parse an Excel file into pandas. After reading the data present it and
-###    if the read data is not satisfactory, reopen the excel document.
-###    a confirmation prompt.
-###
-###    Keyword arguments:
-###        workbook_path -- path of the Excel workbook to be opened.
-###        copy_mode     -- if True, the specified workbook is copied into 
-###    """
-###    data_is_final = False
-###
-###    while not data_is_final :
-###        read_data = pd.read_excel(workbook_path, skiprows=1)
-###        
-###        ## Here one could do a replace with a dict if the transaction type was abbreviated
-###
-###
-###        print('The read data is:')
-###        display(read_data)
-###        print('')
-###
-###        signal = input('If this is not the intended data, enter any number. ' +
-###                       'If you want to abort, press Q. If you enter anything '+
-###                       'else, the workbook will be opened instead')
-###        if signal in ['q', 'Q'] :
-###            return 1
-###
-###        def is_number(s) :
-###            try :
-###                float(s)
-###                return True
-###            except ValueError :
-###                return False
-###
-###        if not is_number(request) :
-###            print('OK.')
-###            data_is_final = True
-###        else : 
-###            os.system('open ' + file_path)
-###            input('Make any input to continue.')
-###    
-###    return read_data
