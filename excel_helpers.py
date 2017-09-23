@@ -159,9 +159,9 @@ def use_excel_for_data_entry(workbook_path, copy_mode=True,
         display(read_data)
         print('')
 
-        signal = input('If you are satisfied with the read data, enter any'
-                       ' number. If you do not do this, the workbook will be'
-                       ' opened again. You can abort by entering Q.')
+        signal = input('If you are not satisfied with the read data, enter any'
+                       ' number. If you do this, the workbook will be opened'
+                       ' again. Continue with any other input; abort with Q.')
         abort_with_q(signal)
 
         def is_number(s) :
