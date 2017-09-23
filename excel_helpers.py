@@ -1,6 +1,11 @@
 import os
 import shutil
+from itertools import product
+
 import pandas as pd
+
+import openpyxl as pyxl
+from gspread.utils import a1_to_rowcol, rowcol_to_a1
 
 ###############################################################################
 # Convert a range string into a python list of individual cells               #
@@ -70,7 +75,7 @@ def get_df_by_range(sheet, first_cell, last_cell, date_cols=None) :
 
     data_rows = [[cell.value for cell in row] + \
                 ['{0}:{1}'.format(row[0].coordinate, row[-1].coordinate)]
-        for row in august[first_cell:last_cell]]
+        for row in sheet[first_cell:last_cell]]
 
     df = pd.DataFrame(data_rows)
     new_index = df.iloc[:,range(len(df.columns)-1)].dropna(how='all').index
@@ -96,6 +101,14 @@ def put_comment_into_excel(sheet, cells, comment_text) :
         for cell in cells :
             try : 
                 sheet[cell].comment = comment
+            except :
+                print(cell)
+                print(comment)
+                print(type(sheet))
+    elif type(cells) is str :
+        sheet[cells].comment = comment
+    else :
+        raise ValueError('Unexpected type of argument recieved for cells')
 
 
 ###############################################################################
@@ -142,7 +155,7 @@ def use_excel_for_data_entry(workbook_path, copy_mode=True,
             input('Make any input to continue.')
 
         # Reading the data
-        read_data = pd.read_excel(workbook_path, skiprows=1)
+        read_data = pd.read_excel(workbook_path)
         
         ## ToDo : Here one could do a replace with a dict if the transaction 
         ##        type was abbreviated 
@@ -163,10 +176,10 @@ def use_excel_for_data_entry(workbook_path, copy_mode=True,
             except ValueError :
                 return False
 
-        if not is_number(request) :
+        if not is_number(signal) :
             print('OK.')
             data_is_final = True
-        else
+        else :
             # This really makes sure the file will be opened again
             open_before_read = True
 
