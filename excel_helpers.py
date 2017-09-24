@@ -179,6 +179,12 @@ def use_excel_for_data_entry(workbook_path, copy_mode=True,
             open_before_read = True
 
     if delete_temp :
-        os.remove(temp_path)
+        try :
+            os.remove(temp_path)
+        except FileNotFoundError as e :
+            if not copy_mode :
+                pass
+            else :
+                raise e
     
     return read_data
