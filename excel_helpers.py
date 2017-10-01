@@ -143,11 +143,12 @@ def use_excel_for_data_entry(workbook_path, copy_mode=True,
         if open_before_read :
             signal = input('The file ' + workbook_path + ' will be opened in'
                            ' Excel for data entry. Enter Q to abort, enter'
-                           ' anything else to continue. ')
+                           ' anything else to continue: ')
             abort_with_q(signal)
 
             os.system('open ' + workbook_path)
-            input('Make any input to continue.')
+            input('Make any input to continue. Abort with Q: ')
+            abort_with_q(signal)
 
         # Reading the data
         read_data = pd.read_excel(workbook_path)
@@ -156,12 +157,13 @@ def use_excel_for_data_entry(workbook_path, copy_mode=True,
         ##        type was abbreviated 
 
         print('The read data is:')
-        display(read_data)
+        with pd.option_context('display.max_rows', None) :
+            display(read_data)
         print('')
 
         signal = input('If you are not satisfied with the read data, enter any'
                        ' number. If you do this, the workbook will be opened'
-                       ' again. Continue with any other input; abort with Q.')
+                       ' again. Continue with any other input; abort with Q: ')
         abort_with_q(signal)
 
         def is_number(s) :
