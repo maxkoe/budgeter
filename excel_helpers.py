@@ -147,7 +147,7 @@ def use_excel_for_data_entry(workbook_path, copy_mode=True,
             abort_with_q(signal)
 
             os.system('open ' + workbook_path)
-            input('Make any input to continue. Abort with Q: ')
+            signal = input('Make any input to continue. Abort with Q: ')
             abort_with_q(signal)
 
         # Reading the data
