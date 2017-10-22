@@ -33,6 +33,13 @@ def list_from_range_string(range_string) :
     return [rowcol_to_a1(i,j) for i,j in 
             product(range(first_row, last_row+1), range(first_col, last_col+1))]
 
+def list_of_col_names(number_of_cols, starting_col = 'B') :
+    first_col_num = a1_to_rowcol(starting_col + '1')[1]
+    last_col_num = first_col_num + number_of_cols - 1
+
+    return [a1[:-1] for a1 in 
+            list_from_range_string(rowcol_to_a1(1, first_col_num) + ':' +
+            rowcol_to_a1(1, last_col_num))]
 ###############################################################################
 # Read data from a specific range in an Excel worksheet; convert dates to     #
 # pandas Timestamps                                                           #
