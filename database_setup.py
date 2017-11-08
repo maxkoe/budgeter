@@ -55,7 +55,8 @@ crsr.execute('''
 
 crsr.execute('''
     INSERT INTO event_types
-    VALUES ('Zahlung', 'Barzahlung', 'bares Bezahlen', 'B'),
+    VALUES ('Budget', 'Budgetierung', 'Buchen eines Budget-Betrags', 'BU'),
+           ('Zahlung', 'Barzahlung', 'bares Bezahlen', 'B'),
            ('Zahlung', 'Kartenzahlung', 'Zahlen mit Visa oder Girokarte', 'K'),
            ('Zahlung', 'Überweisung', 'Rechnungsbegleichung durch Überweisen', 'U'),
            ('Zahlung', 'Dauerauftrag', 'automatische (regelmäßige) Rechnungsbegleichung durch Dauerauftrag', 'D'),
@@ -136,7 +137,7 @@ crsr.execute('''CREATE TABLE IF NOT EXISTS recievings (
         money_pot TEXT,
         amount REAL,
         additional_description TEXT,
-        budget_effect_date TEXT, 
+        effect_date TEXT, 
         FOREIGN KEY (id) REFERENCES money_events(id),
         FOREIGN KEY (money_pot) REFERENCES money_pots (key)
     );
