@@ -1,7 +1,19 @@
 import json
 import pandas as pd
+import numpy as np
 import openpyxl as pyxl
 import re
+from sqlite3 import IntegrityError
+
+from excel_helpers import *
+from db_entries import *
+
+from itertools import chain
+from warnings import warn as Warning
+
+###############################################################################
+# creating a unified excel sheet based on definition data from a .json-file
+###############################################################################
 
 def create_excel_table_from_data(dataframe, filename, db, definition_data) :
     
@@ -145,3 +157,125 @@ def create_excel_table_from_data(dataframe, filename, db, definition_data) :
         the_sheet.column_dimensions[col_props['excel_col']].hidden = True    
     
     wb.save(filename)
+
+###############################################################################
+# some helper functions to easily generate comments for the db and excel files
+###############################################################################
+
+def autogenerate_database_comment_multiple_excel_ranges(filename, ranges,
+                                                        comment_sheet) :
+    try :
+        ranges_string = ', '.join(ranges[:-1]) + \
+                        (' and ' if len(ranges) > 1 else '') + ranges[-1]
+    except IndexError :
+        raise ValueError('You should provide at least one Excel range')
+    return 'This entry was automatically generated from the excel file ' + \
+           '{}. It is based on the cells {}. A note has been '.format(
+               filename, ranges_string) + \
+           'added to the respective cells in the sheet {}.'.format(comment_sheet.title)
+
+def autogenerate_database_comment(filename, range_, comment_sheet) :
+    return autogenerate_database_comment_multiple_excel_ranges(
+                filename, [range_], comment_sheet)
+
+def autogenerate_excel_comment(date, db_filename, the_id) :
+    return 'On {} this cell was automatically read and '.format(date) + \
+           'inserted into the database {}. The id ofthe entry is {}.'.format(
+               date, db_filename, the_id)
+
+###############################################################################
+# Parse the unified excel sheet
+###############################################################################
+
+def parse_unified_excel_table(dataframe, db, db_filename, current_sheet, 
+			      comment_sheet, excel_filename, baseframe = None):
+    if baseframe is None :
+        baseframe = dataframe.copy()
+    untreated_data = dataframe[dataframe['treated'] == 'XX']
+    
+    event_groups_lookup_df = pd.read_sql('SELECT * FROM event_groups', db)
+    temporary_id_lookup_dict = {}
+
+    for index, row in dataframe.iterrows() :
+        if row['ignore'] == 'X' :
+            untreated_data = untreated_data.append(dataframe.loc[index])
+            continue
+        if row['treated'] == 'Yes' :
+            Warning('A treated data row was encountered. This row will ' + 
+		    'be ignored.')
+            Warning("It is recommended to set the 'ignore'-row to 'X' for " +
+		    "treated rows.")
+            continue
+
+        excel_ranges = ([row['excel_range_x']] if type(row['excel_range_x'])
+                            is str else []) + \
+                       ([row['excel_range_y']] if type(row['excel_range_y'])
+                            is str else [])
+
+        if not np.isnan(row['temporary_id']) and \
+                row['temporary_id'] in temporary_id_lookup_dict :
+            the_id = temporary_id_lookup_dict[row['temporary_id']]
+        else :
+            the_id = create_money_event(db, row['type_description'], 
+                                        row['description'], row['date'])
+
+
+            full_excel_ranges = [current_sheet.title + '!' + a_range 
+                                 for a_range in excel_ranges]
+
+            database_comment = \
+                autogenerate_database_comment_multiple_excel_ranges(
+                    excel_filename, full_excel_ranges, comment_sheet.title)
+
+            add_database_event(db, the_id, database_comment)
+
+            if not np.isnan(row['temporary_id']) :
+                temporary_id_lookup_dict[row['temporary_id']] = the_id
+
+        ## ToDo : Add commenting into database and Excel
+
+        if row['is_budget_event'] == 'X' :
+            add_budget_event(db, the_id, row['budget_pot'], row['amount'])
+        if row['is_payment'] == 'X' :
+            add_payment(db, the_id, row['money_pot'], row['amount'])
+        if row['is_recieving'] == 'X' :
+            add_payment(db, the_id, row['money_pot'], row['amount'])
+        if row['is_transfer'] == 'X' :
+            add_payment(db, the_id, row['money_pot'], row['money_pot_sink'], 
+                        row['amount'])
+
+        if not np.isnan(row['in_group']) :  
+            group_id = int(row['in_group'])
+            if row['in_group'] not in event_groups_lookup_df['group_id'] :
+                if row['group_name'][0] == '=' :
+                    raise ValueError("You should not use a formula as group " +
+                                     "name! The given group name was {}.".format(
+                                        row['group_name']))
+                crsr = db.cursor()
+                crsr.execute('INSERT INTO event_groups VALUES ({}, "{}")'.format(
+                    row['in_group'], row['group_name']))
+                db.commit()
+                event_groups_lookup_df = pd.read_sql(
+                                            'SELECT * FROM event_groups', db)
+            try : 
+                crsr = db.cursor()
+                crsr.execute('INSERT INTO event_in_group VALUES ' + 
+                             '({}, {})'.format(row['in_group'], the_id))
+                db.commit()
+            except IntegrityError as IE :
+                if 'UNIQUE constraint failed' in str(IE) :
+                    Warning(str(IE))
+                else :
+                    raise IE
+            except :
+                raise
+
+        excel_comment = autogenerate_excel_comment(
+                dt.now().strftime('%Y-%m-%d'), db_filename, the_id)
+        excel_cell_list = list(chain.from_iterable(
+                [list_from_range_string(a_range) for a_range in excel_ranges]))
+        put_comment_into_excel(comment_sheet, excel_cell_list, excel_comment)
+
+        baseframe.loc[index, 'treated'] = 'Yes'
+    
+    return untreated_data
